@@ -21,3 +21,9 @@ export interface ChatSession {
 }
 
 export type Mood = 'light' | 'dark';
+
+export interface GameState {
+  dreamState: {
+    dreamText: string;
+  };
+}
