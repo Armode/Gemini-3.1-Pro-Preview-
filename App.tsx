@@ -4,6 +4,7 @@ import { Message, Role, Mood } from './types';
 import { geminiService } from './services/gemini';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
+import { TerminalSimulator } from './components/TerminalSimulator';
 
 export interface ViewConfig {
   density: 'comfortable' | 'compact';
@@ -12,14 +13,29 @@ export interface ViewConfig {
 
 const App: React.FC = () => {
   const [hasKey, setHasKey] = useState<boolean | null>(null);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: 'welcome',
-      role: Role.MODEL,
-      content: "Hello! I'm Gemini 3 Pro. How can I help you today?",
-      timestamp: new Date(),
+  const [messages, setMessages] = useState<Message[]>(() => {
+    const saved = localStorage.getItem('chat_history');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Rehydrate dates
+        return parsed.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+      } catch (e) {
+        console.error("Failed to load chat history", e);
+      }
     }
-  ]);
+    return [
+      {
+        id: 'welcome',
+        role: Role.MODEL,
+        content: "Hello! I'm Gemini 3 Pro. How can I help you today?",
+        timestamp: new Date(),
+      }
+    ];
+  });
   const [isTyping, setIsTyping] = useState(false);
   const [viewConfig, setViewConfig] = useState<ViewConfig>({
     density: 'comfortable',
@@ -27,8 +43,13 @@ const App: React.FC = () => {
   });
   const [showSettings, setShowSettings] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const [showTerminal, setShowTerminal] = useState(false);
   const [mood, setMood] = useState<Mood>('dark');
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    localStorage.setItem('chat_history', JSON.stringify(messages));
+  }, [messages]);
 
   useEffect(() => {
     const checkKey = async () => {
@@ -318,6 +339,13 @@ const App: React.FC = () => {
             <i className="fas fa-key mr-2"></i> Update API Key
           </button>
           <button 
+            onClick={() => setShowTerminal(true)}
+            className={`${subTextClass} hover:text-green-500 transition-colors text-sm font-medium p-2 sm:p-0`}
+            title="Run ARM Simulator"
+          >
+            <i className="fas fa-terminal sm:mr-2"></i> <span className="hidden sm:inline">Run</span>
+          </button>
+          <button 
             onClick={() => setShowClearConfirm(true)}
             className={`${subTextClass} hover:${textClass} transition-colors text-sm font-medium p-2 sm:p-0`}
             title="Clear Chat"
@@ -388,6 +416,11 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ARM Terminal Simulator */}
+      {showTerminal && (
+        <TerminalSimulator onClose={() => setShowTerminal(false)} />
       )}
     </div>
   );
