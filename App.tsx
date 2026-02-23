@@ -26,6 +26,7 @@ const App: React.FC = () => {
     width: 'standard'
   });
   const [showSettings, setShowSettings] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [mood, setMood] = useState<Mood>('dark');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -68,6 +69,11 @@ const App: React.FC = () => {
   const handleMoodChange = (newMood: Mood) => {
     console.log("Agent setting mood to:", newMood);
     setMood(newMood);
+  };
+
+  const handleClearChat = () => {
+    setMessages([messages[0]]);
+    setShowClearConfirm(false);
   };
 
   const handleSendMessage = async (content: string) => {
@@ -312,7 +318,7 @@ const App: React.FC = () => {
             <i className="fas fa-key mr-2"></i> Update API Key
           </button>
           <button 
-            onClick={() => setMessages([messages[0]])}
+            onClick={() => setShowClearConfirm(true)}
             className={`${subTextClass} hover:${textClass} transition-colors text-sm font-medium p-2 sm:p-0`}
             title="Clear Chat"
           >
@@ -334,12 +340,14 @@ const App: React.FC = () => {
           
           {/* Typing Indicator */}
           {isTyping && messages.length > 0 && messages[messages.length - 1].role === Role.MODEL && !messages[messages.length - 1].content && (
-             <div className="flex items-start space-x-3 sm:space-x-4 animate-pulse">
+             <div className="flex items-start space-x-3 sm:space-x-4">
                 <div className={`w-8 h-8 rounded-lg shrink-0 flex items-center justify-center border ${isLight ? 'bg-white border-slate-200' : 'bg-slate-800 border-slate-700'}`}>
                    <i className={`fas fa-robot text-xs ${isLight ? 'text-indigo-600' : 'text-white'}`}></i>
                 </div>
-                <div className={`border px-4 py-3 rounded-2xl rounded-tl-none text-sm ${isLight ? 'bg-white border-slate-200 text-slate-500' : 'bg-slate-900 border-slate-800 text-slate-400'}`}>
-                   Thinking...
+                <div className={`border px-4 py-3 rounded-2xl rounded-tl-none text-sm flex items-center space-x-1.5 h-[46px] ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'}`}>
+                   <div className={`w-1.5 h-1.5 rounded-full animate-bounce ${isLight ? 'bg-slate-400' : 'bg-slate-500'}`} style={{ animationDelay: '0ms' }}></div>
+                   <div className={`w-1.5 h-1.5 rounded-full animate-bounce ${isLight ? 'bg-slate-400' : 'bg-slate-500'}`} style={{ animationDelay: '150ms' }}></div>
+                   <div className={`w-1.5 h-1.5 rounded-full animate-bounce ${isLight ? 'bg-slate-400' : 'bg-slate-500'}`} style={{ animationDelay: '300ms' }}></div>
                 </div>
              </div>
           )}
@@ -355,6 +363,32 @@ const App: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Clear Chat Confirmation Dialog */}
+      {showClearConfirm && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className={`w-full max-w-sm p-6 rounded-2xl shadow-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-700'}`}>
+            <h3 className={`text-lg font-bold mb-2 ${textClass}`}>Clear Chat?</h3>
+            <p className={`text-sm mb-6 ${subTextClass}`}>
+              Are you sure you want to clear the current conversation? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isLight ? 'text-slate-600 hover:bg-slate-100' : 'text-slate-300 hover:bg-slate-800'}`}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClearChat}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors shadow-sm shadow-red-500/20"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
