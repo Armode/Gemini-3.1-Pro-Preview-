@@ -5,6 +5,7 @@ import { geminiService } from './services/gemini';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
 import { TerminalSimulator } from './components/TerminalSimulator';
+import { WarpAnalysis } from './components/WarpAnalysis';
 
 export interface ViewConfig {
   density: 'comfortable' | 'compact';
@@ -44,6 +45,7 @@ const App: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
+  const [showWarpAnalysis, setShowWarpAnalysis] = useState(false);
   const [mood, setMood] = useState<Mood>('dark');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -339,6 +341,14 @@ const App: React.FC = () => {
             <i className="fas fa-key mr-2"></i> Update API Key
           </button>
           <button 
+            onClick={() => setShowWarpAnalysis(true)}
+            className={`${subTextClass} hover:text-blue-500 transition-colors text-sm font-medium p-2 sm:p-0`}
+            title="Warp Theory Analysis"
+          >
+            <i className="fas fa-space-shuttle sm:mr-2"></i> <span className="hidden sm:inline">Analysis</span>
+          </button>
+          <button 
+            id="run-simulator-btn"
             onClick={() => setShowTerminal(true)}
             className={`${subTextClass} hover:text-green-500 transition-colors text-sm font-medium p-2 sm:p-0`}
             title="Run ARM Simulator"
@@ -421,6 +431,11 @@ const App: React.FC = () => {
       {/* ARM Terminal Simulator */}
       {showTerminal && (
         <TerminalSimulator onClose={() => setShowTerminal(false)} />
+      )}
+
+      {/* Warp Theory Analysis */}
+      {showWarpAnalysis && (
+        <WarpAnalysis onClose={() => setShowWarpAnalysis(false)} />
       )}
     </div>
   );
