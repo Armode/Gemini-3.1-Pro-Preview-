@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import LZString from 'lz-string';
 import { Message, Role, Mood } from './types';
 import { geminiService } from './services/gemini';
 import ChatMessage from './components/ChatMessage';
@@ -15,6 +16,27 @@ export interface ViewConfig {
 const App: React.FC = () => {
   const [hasKey, setHasKey] = useState<boolean | null>(null);
   const [messages, setMessages] = useState<Message[]>(() => {
+    // 1. Check URL for shared chat
+    const hash = window.location.hash;
+    if (hash.startsWith('#shared=')) {
+      try {
+        const compressed = hash.replace('#shared=', '');
+        const decompressed = LZString.decompressFromEncodedURIComponent(compressed);
+        if (decompressed) {
+          const parsed = JSON.parse(decompressed);
+          // Clean up the URL so refreshing doesn't reset to shared state
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          return parsed.map((msg: any) => ({
+            ...msg,
+            timestamp: new Date(msg.timestamp)
+          }));
+        }
+      } catch (e) {
+        console.error("Failed to load shared chat", e);
+      }
+    }
+
+    // 2. Check localStorage
     const saved = localStorage.getItem('chat_history');
     if (saved) {
       try {
@@ -46,6 +68,7 @@ const App: React.FC = () => {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showTerminal, setShowTerminal] = useState(false);
   const [showWarpAnalysis, setShowWarpAnalysis] = useState(false);
+  const [shareLink, setShareLink] = useState<string | null>(null);
   const [mood, setMood] = useState<Mood>('dark');
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -97,6 +120,23 @@ const App: React.FC = () => {
   const handleClearChat = () => {
     setMessages([messages[0]]);
     setShowClearConfirm(false);
+  };
+
+  const handleShare = () => {
+    const json = JSON.stringify(messages);
+    const compressed = LZString.compressToEncodedURIComponent(json);
+    const url = `${window.location.origin}${window.location.pathname}#shared=${compressed}`;
+    setShareLink(url);
+  };
+
+  const copyShareLink = () => {
+    if (shareLink) {
+      navigator.clipboard.writeText(shareLink).then(() => {
+        alert("Link copied to clipboard!");
+      }).catch(err => {
+        console.error("Failed to copy link", err);
+      });
+    }
   };
 
   const handleSendMessage = async (content: string) => {
@@ -362,6 +402,13 @@ const App: React.FC = () => {
           >
             <i className="fas fa-trash-alt sm:mr-2"></i> <span className="hidden sm:inline">Clear</span>
           </button>
+          <button 
+            onClick={handleShare}
+            className={`${subTextClass} hover:text-indigo-500 transition-colors text-sm font-medium p-2 sm:p-0`}
+            title="Share Chat"
+          >
+            <i className="fas fa-share-alt sm:mr-2"></i> <span className="hidden sm:inline">Share</span>
+          </button>
         </div>
       </header>
 
@@ -422,6 +469,37 @@ const App: React.FC = () => {
                 className="px-4 py-2 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors shadow-sm shadow-red-500/20"
               >
                 Clear
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Share Chat Dialog */}
+      {shareLink && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className={`w-full max-w-lg p-6 rounded-2xl shadow-2xl border ${isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-700'}`}>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className={`text-lg font-bold ${textClass}`}>Share Conversation</h3>
+              <button onClick={() => setShareLink(null)} className={`${subTextClass} hover:${textClass}`}>
+                <i className="fas fa-times"></i>
+              </button>
+            </div>
+            <p className={`text-sm mb-4 ${subTextClass}`}>
+              Anyone with this link will be able to view and continue this conversation.
+            </p>
+            <div className={`flex items-center space-x-2 p-2 rounded-lg border ${isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
+              <input 
+                type="text" 
+                readOnly 
+                value={shareLink} 
+                className={`flex-1 bg-transparent border-none outline-none text-sm ${textClass}`}
+              />
+              <button
+                onClick={copyShareLink}
+                className="px-4 py-2 text-sm font-medium text-white bg-indigo-500 hover:bg-indigo-600 rounded-lg transition-colors shadow-sm"
+              >
+                Copy
               </button>
             </div>
           </div>
