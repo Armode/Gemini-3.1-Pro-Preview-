@@ -211,6 +211,10 @@ const App: React.FC = () => {
         errorStatus === 'RESOURCE_EXHAUSTED' || 
         rawErrorMessage.toLowerCase().includes('quota') || 
         rawErrorMessage.includes('429');
+      const isAuthError = errorCode === 401 || errorCode === 403 || rawErrorMessage.toLowerCase().includes('unauthorized') || rawErrorMessage.toLowerCase().includes('forbidden') || rawErrorMessage.toLowerCase().includes('api_key_invalid');
+      const isNetworkError = rawErrorMessage.toLowerCase().includes('network') || rawErrorMessage.toLowerCase().includes('fetch') || rawErrorMessage.toLowerCase().includes('failed to fetch');
+      const isServerError = errorCode >= 500 || rawErrorMessage.toLowerCase().includes('internal server error') || rawErrorMessage.toLowerCase().includes('service unavailable');
+      const isBadRequest = errorCode === 400 || rawErrorMessage.toLowerCase().includes('bad request');
 
       let userDisplayMessage = "Sorry, I encountered an error. Please try again.";
       
@@ -218,10 +222,20 @@ const App: React.FC = () => {
         userDisplayMessage = "⚠️ **Quota Exceeded**\n\nThe API key has exceeded its rate limit or quota. This often happens with shared keys.\n\nPlease click **Update API Key** in the top right (or use the popup) to use your own Google Cloud Project key with billing enabled.";
       } else if (isEntityNotFoundError) {
         userDisplayMessage = "API Key error. Please re-select your key.";
+      } else if (isAuthError) {
+        userDisplayMessage = "⚠️ **Authentication Error**\n\nYour API key is invalid or lacks the necessary permissions. Please click **Update API Key** to provide a valid key.";
+      } else if (isNetworkError) {
+        userDisplayMessage = "⚠️ **Network Error**\n\nUnable to connect to the server. Please check your internet connection and try again.";
+      } else if (isServerError) {
+        userDisplayMessage = "⚠️ **Server Error**\n\nThe Gemini API is currently experiencing issues. Please try again later.";
+      } else if (isBadRequest) {
+        userDisplayMessage = "⚠️ **Bad Request**\n\nThe request was invalid. This might be due to an unsupported parameter, too much context, or an invalid prompt.";
+      } else if (rawErrorMessage) {
+        userDisplayMessage = `⚠️ **Error**\n\n${rawErrorMessage}`;
       }
 
       // Automatically trigger key selection for auth/quota issues
-      if (isEntityNotFoundError || isQuotaError) {
+      if (isEntityNotFoundError || isQuotaError || isAuthError) {
         setHasKey(false);
         const aistudio = (window as any).aistudio;
         if (aistudio) {

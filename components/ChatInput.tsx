@@ -11,6 +11,9 @@ interface ChatInputProps {
 
 const ChatInput: React.FC<ChatInputProps> = ({ onSend, disabled, density = 'comfortable', mood }) => {
   const [input, setInput] = useState('');
+  const [history, setHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [draft, setDraft] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isCompact = density === 'compact';
   const isLight = mood === 'light';
@@ -32,6 +35,9 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, disabled, density = 'comf
     e?.preventDefault();
     if (input.trim() && !disabled) {
       onSend(input.trim());
+      setHistory(prev => [...prev, input.trim()]);
+      setHistoryIndex(-1);
+      setDraft('');
       setInput('');
     }
   };
@@ -40,6 +46,29 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSend, disabled, density = 'comf
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
+    } else if (e.key === 'ArrowUp') {
+      if (historyIndex > -1 || (textareaRef.current && textareaRef.current.selectionStart === 0 && textareaRef.current.selectionEnd === 0)) {
+        if (historyIndex < history.length - 1) {
+          e.preventDefault();
+          if (historyIndex === -1) {
+            setDraft(input);
+          }
+          const newIndex = historyIndex + 1;
+          setHistoryIndex(newIndex);
+          setInput(history[history.length - 1 - newIndex]);
+        }
+      }
+    } else if (e.key === 'ArrowDown') {
+      if (historyIndex > -1) {
+        e.preventDefault();
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        if (newIndex === -1) {
+          setInput(draft);
+        } else {
+          setInput(history[history.length - 1 - newIndex]);
+        }
+      }
     }
   };
 
