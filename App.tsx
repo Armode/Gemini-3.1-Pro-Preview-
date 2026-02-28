@@ -139,6 +139,19 @@ const App: React.FC = () => {
     }
   };
 
+  const handleExportChat = () => {
+    const json = JSON.stringify(messages, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chat_history_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const handleSendMessage = async (content: string) => {
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -203,6 +216,17 @@ const App: React.FC = () => {
         }
       } else {
         rawErrorMessage = String(error);
+      }
+
+      try {
+        const parsed = JSON.parse(rawErrorMessage);
+        if (parsed && parsed.error) {
+          rawErrorMessage = parsed.error.message || rawErrorMessage;
+          errorCode = parsed.error.code || errorCode;
+          errorStatus = parsed.error.status || errorStatus;
+        }
+      } catch (e) {
+        // Not a JSON string, ignore
       }
 
       const isEntityNotFoundError = rawErrorMessage.includes("Requested entity was not found");
@@ -422,6 +446,13 @@ const App: React.FC = () => {
             title="Share Chat"
           >
             <i className="fas fa-share-alt sm:mr-2"></i> <span className="hidden sm:inline">Share</span>
+          </button>
+          <button 
+            onClick={handleExportChat}
+            className={`${subTextClass} hover:text-indigo-500 transition-colors text-sm font-medium p-2 sm:p-0`}
+            title="Export Chat"
+          >
+            <i className="fas fa-download sm:mr-2"></i> <span className="hidden sm:inline">Export</span>
           </button>
         </div>
       </header>
